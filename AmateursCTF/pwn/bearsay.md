@@ -5,7 +5,7 @@ The first thing I usually do when approaching a new problem is trying to look at
 
 When extracting the `dist.tar.xz` file I was presented with the `chal` binary.
 
-Running file on it will show us that it's an ELF 64-bit executable.
+Running `file` on it will show us that it's an ELF 64-bit executable.
 
 ```
 $ file ./chal
@@ -24,10 +24,9 @@ $ ./chal
 ʕ •ɷ•ʔฅ
 ```
 
-As we can see, the program asks for an input and outputs it.
-Pretty simple!
+As we can see, the program asks for an input and it outputs it back at us, Pretty simple!
 
-One of the first thing you should always check when getting a "echo" program like that is to check if the input is handled correctly.
+One of the first thing I always check when getting a "echo" program like that is to check if the input is handled correctly.
 
 I tried inputting `%llx %llx %llx` as my input and saw that this program is vulnrable to a format string exploit.
 
@@ -42,7 +41,7 @@ $ ./chal
 🧸
 ```
 
-let's look how that input is handled in the program
+let's look how that my is handled in the program
 
 # Analyzing the code
 
