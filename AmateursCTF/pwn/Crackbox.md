@@ -470,7 +470,7 @@ while True:
 ```
 
 my make file
-```
+``` title="makefile"
 .PHONY: script run
 
 script: script.c
