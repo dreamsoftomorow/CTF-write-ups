@@ -469,7 +469,7 @@ while True:
         con.close()
 ```
 
-my make file
+`makefile`
 ``` title="makefile"
 .PHONY: script run
 
@@ -487,7 +487,7 @@ run: script exploit.py
 	python3 exploit.py
 ```
 
-my linker.ld
+`linker.ld`
 ```
 ENTRY(main)
 
