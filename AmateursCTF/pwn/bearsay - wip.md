@@ -45,4 +45,4 @@ let's look how that my is handled in the program
 
 # Analyzing the code
 
-I opened the code in IDA 
+# WIP

