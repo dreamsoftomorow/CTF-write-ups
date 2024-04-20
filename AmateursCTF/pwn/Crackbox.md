@@ -151,7 +151,7 @@ As we can see, we first map a pointer using mmap.
 
 ### Calling mmap
 ___
-*a cool trick i like using for understanding the flags is just running the program with strace:
+*a cool trick i like using for understanding the flags is just running the program with strace:*
 ```
 $ strace ./chal
 ...
