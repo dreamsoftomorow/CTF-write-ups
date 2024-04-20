@@ -1,8 +1,8 @@
-
+```
 0 solves / 505 points
 Author: unvariant
 Just another restricted qemu-user sandbox.
-
+```
 ___
 ***NOTE***: I didn't solve this challenge during the ctf. but I believe that writing a writeup and having hand-on experience is good in order to have a better understanding of the challenge and to learn the most from it!
 
