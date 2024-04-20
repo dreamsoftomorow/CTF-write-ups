@@ -248,10 +248,7 @@ ___
 *NOTE*: for some reason that didn't work, I just ended up using the first mapped area I found and brute forcing that way :) it did show me that it started in 0x700000000000 though! (the author used 0x4d5000 which does work)
 ___
 ### Finding out what is in the JIT mapped area
-I ran the docker using ``
-```
-sudo docker run --rm --privilaged -p 0.0.0.0:5000:5000 -it crackbox /bin/sh
-```
+I ran the docker using `sudo docker run --rm --privilaged -p 0.0.0.0:5000:5000 -it crackbox /bin/sh`
 
 And in it I changed the `/srv/app/run` file to be
 ```
