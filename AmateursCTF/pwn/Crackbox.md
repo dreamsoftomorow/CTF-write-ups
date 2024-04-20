@@ -57,7 +57,7 @@ In user-mode emulation (like in the challenge) Qemu does that by using a JIT (ju
 
 A plugin is a piece of code that runs when that translation happens.
 
-*An important thing to note is that this plugin runs before the translated code is executed, believe me, I tried :(
+*An important thing to note is that this plugin runs before the translated code is executed, believe me, I tried :(*
 ### How does a plugin operate
 ```c
  * The general life-cycle of a plugin is:
