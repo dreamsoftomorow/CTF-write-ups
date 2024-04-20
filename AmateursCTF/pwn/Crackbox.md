@@ -53,7 +53,7 @@ Looking at the `run.sh` file provided with the challenge we can see that qemu is
 ### So what is a qemu plugin?
 Qemu works by translating our code in run time from the guest instruction set to the host instruction set.
 
-In user-mode emulation (like in the challenge) Qemu does that by using a JIT (just in time) compiler that does just that (called TCG) **REMEMBER THIS, IT WILL BE IMPORTANT LATER!.
+In user-mode emulation (like in the challenge) Qemu does that by using a JIT (just in time) compiler that does just that (called TCG) **REMEMBER THIS, IT WILL BE IMPORTANT LATER!.**
 
 A plugin is a piece of code that runs when that translation happens.
 
