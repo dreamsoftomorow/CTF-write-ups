@@ -118,7 +118,7 @@ That's a `1/4096` chance!
 I didn't want to spam the servers so I opened a ticket and turns out that's not the intended solution. Sad :(
 
 ## Exploiting the `vuln/notepad` functions
-One weird thing that happens in the `vuln` function is the initiation of a new pthread. I started searching for `pthread canary bof bypass` or other bullshit on google and I found stuff I didn't really understand about changing the canary and overwriting `TLS`, but than I realised that I didn't even try to run the function and overflow it!
+One weird thing that happens in the `vuln` function is the initiation of a new pthread. I started searching for `pthread canary bof bypass` or other bullshit on google and I found stuff I didn't really understand about changing the canary and overwriting `TLS` but than I realised that I didn't even try to run the function and overflow it!
 
 I created a quick script
 ```python
@@ -390,6 +390,7 @@ So that means we can overwrite `TLS`, which the `fs` register points to, and thu
 Remember that crash we had when reading `fs:0x10`?
 Let's understand what happened there!
 
+We call `read` and crash.
 Looking at `__libc_read` we can see a call to `SYSCALL_CANCEL`.
 ```c
 /* Read NBYTES into BUF from FD.  Return the number read or -1 */
@@ -401,7 +402,7 @@ __libc_read (int fd, void *buf, size_t nbytes)
 libc_hidden_def (__libc_read)
 ```
 
-Looking at `SYSCALL_CANCEL`
+inside `SYSCALL_CANCEL` we make a call to `LIBC_CANCEL_RESET`
 ```c
 #define SYSCALL_CANCEL(...) \
   ({
@@ -457,10 +458,4 @@ It seems like we try to read `fs` with the offset of `header.self` inside the `p
 
 Looking at `pthread` we can see that this corresponds to `fs:0x10`. And this is the read that we failed on. That's because we overwrote the `TLS`, which means we overwrote the `pthread` class and thus changed that pointer!
 
-More specifically, we crash when we try to change the `cancel_type` in our pthread struct to be `PTHREAD_CANCEL_ENABLE` instead of `PTHREAD_CANCEL_ASYNCHRONOUS`.
-
-## Why isn't there a guard page before TLS?
-Putting the whole `pthread` struct at the end of the stack seems very vulnerable, as proven by this challenge.
-
-So why don't we put a guard page before it?
-The sad answer is we just don't. There is a guard page after the end of the newly allocated `pthread` stack (if we didn't turn it off in the attributes/ didn't give our own stack to pthread), but we don't create a guard page before the TLS.
+More specifically, we crashed when we tried to change the `cancel_type` in our pthread struct to be `PTHREAD_CANCEL_ENABLE` instead of `PTHREAD_CANCEL_ASYNCHRONOUS`.
