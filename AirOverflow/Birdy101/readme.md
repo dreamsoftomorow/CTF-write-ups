@@ -7,7 +7,6 @@ These birds are unpredictable.
 ___
 # Introduction
 In this writeup I will document my general approach for this ctf challenge, how I found the vulnrability and how I exploited it.
-I am writing this writeup to give people a general understanding of how I approached  challenges :).
 # Starting the challenge
 In the challenge we get the files `Birdy101`, `Birdy101.c`, `flag.txt` and a `Dockerfile`.
 
