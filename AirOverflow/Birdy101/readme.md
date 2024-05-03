@@ -94,7 +94,7 @@ $ checksec Birdy101
 
 Sadly, we got a canary.
 That means that this challenge wont be super easy...
-luckily the executable is not position independant. That means we can leak the `got` or maybe run other types of attacks!
+Luckily the executable is not position independant so we can leak the `got` or maybe run other types of attacks!
 
 ## Leaking the canary
 ---
@@ -103,7 +103,9 @@ ___
 When we write to the location of `name` we are able to override only a couple of opcodes.
 That means that if, for example, the value of `name` is `0x00007fffffffe000` we can overrite only the last byte and turn it into `0x00007fffffffe0XX`.
 
-sadly for us, the value of `name` is initiated as  `buffer` (pointer to the first char).
+Using the fact that the canary is on the stack, we might be able to "beat" aslr and leak it using that method.
+
+Sadly for us, the value of `name` is initiated as  `buffer` (pointer to the first char).
 That means that there is a buffer of `256` characters above the location the `name` variable holds (aka, the `buffer` variable), meaning that the location of the canary is bigger than `location_of_buffer + 256` or, in other words, more than one byte needs to be changed :(
 
 using `gdb` I saw that the  stack canary's location always ends with an 8
