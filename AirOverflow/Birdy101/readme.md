@@ -112,7 +112,7 @@ using `gdb` I saw that the  stack canary's location always ends with an 8
 (I put a breakpoint at the end of  `register_user` and looked at the location of `$rbp-24`)
 *for example* `0x7fffffffe208`.
 
-That means that we need to bruteforce one and a half bytes, or in other words 12 bits.
+That means that we need to bruteforce one and a half bytes, which is equal to 12 bits.
 
 That's a `1/4096` chance!
 I didn't want to spam the servers so I opened a ticket and turns out that's not the intended solution. Sad :(
