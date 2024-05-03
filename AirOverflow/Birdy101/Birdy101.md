@@ -182,7 +182,7 @@ con.interactive()
 ```
 
 using gdb I saw that the crash happesn at the function `__GI__pthread_disable_asynccancel` at offset `18`.
-![[Pasted image 20240429193142.png]]
+![](Pasted%20image%2020240429193142.png)
 
 I added a breakpoint just before there, and i saw that the `mov rax, QWORD PTR fs:0x10` moves `faaxgaax` into the `rax` register, it looks like we somehow overwrote into the location where `fs` points to! that's amazing because the canary is stored at location `fs:0x28`.
 If we could change the canary to whatever we want to, we could bypass it!
