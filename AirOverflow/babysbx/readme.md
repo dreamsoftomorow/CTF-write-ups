@@ -53,10 +53,10 @@ we later copy our inputted sellcode to that area, call the `validate` function o
 let's look at `init_sbx` and `init_reg`.
 ### init_reg
 ![](_attachments/Pasted%20image%2020240503191055.png)
-It seems lke this function just clears out our registers, probably to make it hader for us to execut our shellcode
+It seems lke this function just clears out our registers, probably to make it hader for us to execute our shellcode
 
 ### init_sbx
-IDA seems to struggle with disassembling it, but we can see enough to understand that it just sets up some seccomp rules.
+IDA seems to struggle with disassembeling it, but we can see enough to understand that it just sets up some seccomp rules.
 ```c
 __int64 init_sbx()
 {
@@ -108,7 +108,7 @@ Shellcode looks clean. Invoking..
  0014: 0x06 0x00 0x00 0x00000000  return KILL
 ```
 
-And I quickly saw that I could use both `openat` to open the file and `sendfile`  to open and read the file.
+And I quickly saw that I could use both `openat` to open the file and `sendfile`  to read and output it.
 
 I patched the binary to bypass the `validate`  function and tried running it with this shellcode
 ```c
@@ -141,7 +141,7 @@ asm(
 
 __attribute__((section(".entry"))) int main(void)
 {
-    int f = syscall(SYS_openat, NULL, "/home/tomer/Desktop/Airoverflow/pwn/babysbx/flag.txt", NULL, NULL, NULL, NULL );
+    int f = syscall(SYS_openat, NULL, "/flag.txt", NULL, NULL, NULL, NULL );
     syscall(SYS_sendfile, STDOUT, f, 0, 40, NULL, NULL);
 }
 ```
@@ -226,7 +226,8 @@ LABEL_8:
 }
 ```
 
-As we can see it looks pretty annoying, but that's because the code is written weirdly/ IDA struggles with decompiling it.
+It looks pretty annoying, but that's because the code is written weirdly/ IDA struggles with decompiling it.
+
 This function validates two things, the first being that the opcodes for `int80` or `syscall` or `sysenter` don't exist.
 After doing that, it checks all the opcodes in the shellcode aren't inside the `invalid_chars` list.
 
